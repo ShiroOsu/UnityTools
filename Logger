@@ -1,0 +1,80 @@
+using System;
+using System.Linq;
+using System.Text;
+using UnityEngine;
+
+namespace Code.Tools.Debugging
+{
+    public enum DebugLevel
+    {
+        Info,
+        Warning,
+        Exception,
+        Error,
+    }
+    
+    public static class Logger
+    {
+        private static readonly DebugLevel currentLevel = DebugLevel.Info;
+        private static readonly StringBuilder StringBuilder = new(500);
+
+        // Color: Cyan, Black, Blue, Brown, DarkBlue, Magenta, Green, Grey, LightBlue, Lime, Maroon, Navy, Olive, Orange, Purple, Red, Silver, Teal, White, Yellow
+        private static string Color(this string s, string color, int size = 12) => $"<color={color}><size={size}>{s}</size></color>";
+
+        private static bool SetupLog(string header, string msg, string[] tags = null, string color = "White", DebugLevel debugLevel = DebugLevel.Info)
+        {
+            if ((int)debugLevel > Enum.GetValues(typeof(DebugLevel)).Cast<int>().Max()) return false;
+
+            StringBuilder.Clear();
+
+            if (!string.IsNullOrEmpty(header))
+            {
+                StringBuilder.Append($"[{header}] ".Color(color));
+            }
+            
+            StringBuilder.Append(msg.Color(color));
+
+            if (tags is not null)
+            {
+                StringBuilder.Append("\n[".Color(color));
+                StringBuilder.Append(tags[0].Color(color));
+
+                for (int i = 1; i < tags.Length; i++)
+                {
+                    StringBuilder.Append($", {tags[i]}".Color(color));
+                }
+
+                StringBuilder.Append("]".Color(color));
+            }
+
+            return true;
+        }
+
+        public static void Print(string header, string msg, string[] tags = null, DebugLevel debugLevel = DebugLevel.Info)
+        {
+            var logger = false;
+            
+            switch (debugLevel)
+            {
+                case DebugLevel.Info:
+                    logger = SetupLog(header, msg, tags);
+                    if (logger) Debug.Log(StringBuilder.ToString());
+                    break;
+                case DebugLevel.Warning:
+                    logger = SetupLog(header, msg, tags, "Yellow", DebugLevel.Warning);
+                    if (logger) Debug.LogWarning(StringBuilder.ToString());
+                    break;
+                case DebugLevel.Exception:
+                    logger = SetupLog(header, msg, tags, "Orange", DebugLevel.Exception);
+                    if (logger) Debug.LogException(new Exception(StringBuilder.ToString()));
+                    break;
+                case DebugLevel.Error:
+                    logger = SetupLog(header, msg, tags, "Red", DebugLevel.Error);
+                    if (logger) Debug.LogError(StringBuilder.ToString());
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(debugLevel), debugLevel, null);
+            }
+        }
+    }
+}
